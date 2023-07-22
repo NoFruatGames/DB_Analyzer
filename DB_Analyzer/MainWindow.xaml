@@ -7,6 +7,8 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
+        <Label Content="Select input provider" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="159" FontWeight="Bold" FontSize="14"/>
+        <ComboBox x:Name="inputProviders" HorizontalAlignment="Left" Margin="164,13,0,0" VerticalAlignment="Top" Width="120" FontWeight="Bold" FontSize="14" ></ComboBox>
 
     </Grid>
 </Window>

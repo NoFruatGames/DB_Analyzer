@@ -25,6 +25,22 @@ namespace DB_Analyzer
         public MainWindow()
         {
             InitializeComponent();
+            registerProviders();
+            fillProvidersComboBox(inputProviders);
+        }
+        private void registerProviders()
+        {
+            DbProviderFactories.RegisterFactory("sql server", SqlClientFactory.Instance);
+            DbProviderFactories.RegisterFactory("mysql", MySqlClientFactory.Instance);
+        }
+        private void fillProvidersComboBox(ComboBox comboBox)
+        {
+            var providersNames = DbProviderFactories.GetProviderInvariantNames();
+            comboBox.Items.Add(new ComboBoxItem() { Content = "none", IsSelected=true });
+            foreach (var pn in providersNames)
+            {
+                comboBox.Items.Add(new ComboBoxItem() { Content = pn });
+            }
         }
     }
 }
