@@ -47,13 +47,19 @@ namespace DB_Analyzer
         {
             if (DatabasesComboBox == null) return;
             DatabasesComboBox.Items.Clear();
-            DatabasesComboBox.Items.Add(new ComboBoxItem() { Content = "none", IsSelected = true });
-
+            DatabasesComboBox.Items.Add(new ComboBoxItem() { Content = "none"});
+            DatabasesComboBox.SelectedItem = DatabasesComboBox.Items[0];
             if (databases == null) return;
-
+            string selectedDB = inputDBTool.SelectedDatabase;
             foreach (var dbName in databases)
             {
-                DatabasesComboBox.Items.Add(new ComboBoxItem() { Content = dbName });
+                ComboBoxItem item = new ComboBoxItem() { Content = dbName };
+                
+                if (!string.IsNullOrEmpty(selectedDB) && (item.Content as string) == selectedDB)
+                    item.IsSelected = true;
+                else
+                    item.IsSelected = false;
+                DatabasesComboBox.Items.Add(item);
             }
         }
         DBTool inputDBTool;
@@ -79,6 +85,14 @@ namespace DB_Analyzer
             {
                 MessageBox.Show($"Error: {ex.Message}");
             }
+        }
+
+        private void DatabasesComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (DatabasesComboBox == null || DatabasesComboBox.SelectedItem == null) return;
+            string selectedDB = (DatabasesComboBox.SelectedItem as ComboBoxItem).Content as string;
+            if (selectedDB == "none") return;
+            inputDBTool.SelectedDatabase = selectedDB;
         }
     }
 }

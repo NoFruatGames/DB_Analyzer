@@ -11,19 +11,43 @@ namespace DB_Analyzer
     abstract class DBTool
     {
         public string? ConnectionString { get; set; }
+        public abstract string SelectedDatabase { get; set; }
         public DBTool(string? connectionString)
         {
-            
             ConnectionString = connectionString;
         }
         public abstract List<string> GetDatabases();
         public abstract Task<List<string>> GetDatabasesAsync();
+
     }
 
     class SQLServerTool :DBTool
     {
         public SQLServerTool(string? connectionString) :base(connectionString)
-        {}
+        {
+            
+        }
+        public override string SelectedDatabase
+        {
+            get
+            {
+                var builder = new SqlConnectionStringBuilder(ConnectionString);
+                return builder.InitialCatalog;
+            }
+            set
+            {
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    var builder = new SqlConnectionStringBuilder(ConnectionString);
+                    builder.InitialCatalog = value;
+                    ConnectionString = builder.ConnectionString;
+                }
+                else
+                {
+                    throw new ArgumentException("Database name cannot be empty or null.");
+                }
+            }
+        }
         public override List<string> GetDatabases()
         {
             if (ConnectionString == null)
@@ -95,6 +119,27 @@ namespace DB_Analyzer
     {
         public MySQLTool(string? connectionString) : base(connectionString)
         {}
+        public override string SelectedDatabase
+        {
+            get
+            {
+                var builder = new MySqlConnectionStringBuilder(ConnectionString);
+                return builder.Database;
+            }
+            set
+            {
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    var builder = new MySqlConnectionStringBuilder(ConnectionString);
+                    builder.Database = value;
+                    ConnectionString = builder.ConnectionString;
+                }
+                else
+                {
+                    throw new ArgumentException("Database name cannot be empty or null.");
+                }
+            }
+        }
         public override List<string> GetDatabases()
         {
             if (ConnectionString == null) throw new Exception("connection string is null");
