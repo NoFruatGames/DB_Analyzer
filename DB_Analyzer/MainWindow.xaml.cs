@@ -16,7 +16,7 @@ using Microsoft.Data.SqlClient;
 using System.Data.Common;
 using MySql.Data.MySqlClient;
 using System.Configuration;
-
+using DB_Analyzer.DB_Tools;
 namespace DB_Analyzer
 {
     /// <summary>
@@ -28,26 +28,30 @@ namespace DB_Analyzer
         {
             InitializeComponent();
             registerProviders();
-            fillProvidersComboBox(InputProvidersComboBox);
+            fillInputProvidersComboBox();
         }
+        readonly string sqlserver_name = "sql server";
+        readonly string mysqlserver_name = "mysql";
+        readonly string none_name = "none";
         private void registerProviders()
         {
-            DbProviderFactories.RegisterFactory("sql server", SqlClientFactory.Instance);
-            DbProviderFactories.RegisterFactory("mysql", MySqlClientFactory.Instance);
+            DbProviderFactories.RegisterFactory(sqlserver_name, SqlClientFactory.Instance);
+            DbProviderFactories.RegisterFactory(mysqlserver_name, MySqlClientFactory.Instance);
         }
-        private void fillProvidersComboBox(ComboBox comboBox)
+        private void fillInputProvidersComboBox()
         {
             var providersNames = DbProviderFactories.GetProviderInvariantNames();
+            InputProvidersComboBox.Items.Add(new ComboBoxItem() { Content = none_name, IsSelected=true });
             foreach (var pn in providersNames)
             {
-                comboBox.Items.Add(new ComboBoxItem() { Content = pn });
+                InputProvidersComboBox.Items.Add(new ComboBoxItem() { Content = pn });
             }
         }
-        private async Task FillDbComboBox(List<string>? databases)
+        private async Task FillInputDbComboBox(List<string>? databases)
         {
             if (DatabasesComboBox == null) return;
             DatabasesComboBox.Items.Clear();
-            DatabasesComboBox.Items.Add(new ComboBoxItem() { Content = "none"});
+            DatabasesComboBox.Items.Add(new ComboBoxItem() { Content = none_name });
             DatabasesComboBox.SelectedItem = DatabasesComboBox.Items[0];
             if (databases == null) return;
             string selectedDB = inputDBTool.SelectedDatabase;
@@ -66,20 +70,20 @@ namespace DB_Analyzer
         private async void InputProvidersComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             string selectedProvider = (InputProvidersComboBox.SelectedItem as ComboBoxItem).Content as string;
-            if (selectedProvider == "none")
+            if (selectedProvider == none_name)
             {
-                await FillDbComboBox(null);
+                await FillInputDbComboBox(null);
                 return;
             }
             try
             {
-                if (selectedProvider == "sql server")
+                if (selectedProvider == sqlserver_name)
                     inputDBTool = new SQLServerTool(ConfigurationManager.ConnectionStrings["sql server"].ConnectionString);
-                else if (selectedProvider == "mysql")
+                else if (selectedProvider == mysqlserver_name)
                     inputDBTool = new MySQLTool(ConfigurationManager.ConnectionStrings["mysql"].ConnectionString);
 
                 List<string>? dbs = await inputDBTool.GetDatabasesAsync();
-                await FillDbComboBox(dbs);
+                await FillInputDbComboBox(dbs);
             }
             catch (Exception ex)
             {
@@ -91,7 +95,7 @@ namespace DB_Analyzer
         {
             if (DatabasesComboBox == null || DatabasesComboBox.SelectedItem == null) return;
             string selectedDB = (DatabasesComboBox.SelectedItem as ComboBoxItem).Content as string;
-            if (selectedDB == "none") return;
+            if (selectedDB == none_name) return;
             inputDBTool.SelectedDatabase = selectedDB;
         }
     }

@@ -9,11 +9,9 @@
     <Grid>
         <Label Content="input provider" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="107" FontWeight="Bold" FontSize="14"/>
         <ComboBox x:Name="InputProvidersComboBox" HorizontalAlignment="Left" Margin="122,13,0,0" VerticalAlignment="Top" Width="120" FontWeight="Bold" FontSize="14" SelectionChanged="InputProvidersComboBox_SelectionChanged" >
-            <ComboBoxItem Content="none" IsSelected="True"/>
         </ComboBox>
         <Label Content="database" HorizontalAlignment="Left" Margin="254,11,0,0" VerticalAlignment="Top" Width="77" FontWeight="Bold" FontSize="14"/>
         <ComboBox x:Name="DatabasesComboBox" HorizontalAlignment="Center" Margin="0,14,0,0" VerticalAlignment="Top" Width="141" FontWeight="Bold" FontSize="14" SelectionChanged="DatabasesComboBox_SelectionChanged" >
-            <ComboBoxItem Content="none" IsSelected="True"/>
         </ComboBox>
 
     </Grid>
