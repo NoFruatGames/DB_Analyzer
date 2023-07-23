@@ -15,6 +15,8 @@ using System.Windows.Shapes;
 using Microsoft.Data.SqlClient;
 using System.Data.Common;
 using MySql.Data.MySqlClient;
+using System.Configuration;
+
 namespace DB_Analyzer
 {
     /// <summary>
@@ -26,7 +28,7 @@ namespace DB_Analyzer
         {
             InitializeComponent();
             registerProviders();
-            fillProvidersComboBox(inputProviders);
+            fillProvidersComboBox(InputProvidersComboBox);
         }
         private void registerProviders()
         {
@@ -36,10 +38,46 @@ namespace DB_Analyzer
         private void fillProvidersComboBox(ComboBox comboBox)
         {
             var providersNames = DbProviderFactories.GetProviderInvariantNames();
-            comboBox.Items.Add(new ComboBoxItem() { Content = "none", IsSelected=true });
             foreach (var pn in providersNames)
             {
                 comboBox.Items.Add(new ComboBoxItem() { Content = pn });
+            }
+        }
+        private async Task FillDbComboBox(List<string>? databases)
+        {
+            if (DatabasesComboBox == null) return;
+            DatabasesComboBox.Items.Clear();
+            DatabasesComboBox.Items.Add(new ComboBoxItem() { Content = "none", IsSelected = true });
+
+            if (databases == null) return;
+
+            foreach (var dbName in databases)
+            {
+                DatabasesComboBox.Items.Add(new ComboBoxItem() { Content = dbName });
+            }
+        }
+        DBTool inputDBTool;
+        private async void InputProvidersComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            string selectedProvider = (InputProvidersComboBox.SelectedItem as ComboBoxItem).Content as string;
+            if (selectedProvider == "none")
+            {
+                await FillDbComboBox(null);
+                return;
+            }
+            try
+            {
+                if (selectedProvider == "sql server")
+                    inputDBTool = new SQLServerTool(ConfigurationManager.ConnectionStrings["sql server"].ConnectionString);
+                else if (selectedProvider == "mysql")
+                    inputDBTool = new MySQLTool(ConfigurationManager.ConnectionStrings["mysql"].ConnectionString);
+
+                List<string>? dbs = await inputDBTool.GetDatabasesAsync();
+                await FillDbComboBox(dbs);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error: {ex.Message}");
             }
         }
     }
