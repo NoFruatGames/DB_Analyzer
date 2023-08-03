@@ -9,7 +9,7 @@
     <Grid>
         <Label Content="input provider" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="118" FontWeight="Bold" FontSize="14" HorizontalContentAlignment="Right"/>
         <ComboBox x:Name="InputProvidersComboBox" HorizontalAlignment="Left" Margin="134,13,0,0" VerticalAlignment="Top" Width="120" FontWeight="Bold" FontSize="14" SelectionChanged="InputProvidersComboBox_SelectionChanged" />
-        <Label Content="database" HorizontalAlignment="Left" Margin="259,11,0,0" VerticalAlignment="Top" Width="77" FontWeight="Bold" FontSize="14">
+        <Label Content="database" HorizontalAlignment="Left" Margin="259,11,0,0" VerticalAlignment="Top" Width="77" FontWeight="Bold" FontSize="14" HorizontalContentAlignment="Right">
             <Label.Resources>
                 <Style TargetType="Label">
                     <Style.Triggers>
@@ -26,7 +26,7 @@
         <ComboBox x:Name="InputDatabasesComboBox" HorizontalAlignment="Left" Margin="341,14,0,0" VerticalAlignment="Top" Width="141" FontWeight="Bold" FontSize="14" SelectionChanged="inputDatabasesComboBox_SelectionChanged" Visibility="Hidden" />
         <Label Content="output provider" HorizontalAlignment="Left" Margin="10,44,0,0" VerticalAlignment="Top" Width="118" FontWeight="Bold" FontSize="14"/>
         <ComboBox x:Name="InputProvidersComboBox_Copy" HorizontalAlignment="Left" Margin="134,46,0,0" VerticalAlignment="Top" Width="120" FontWeight="Bold" FontSize="14"/>
-        <Label Content="database" HorizontalAlignment="Left" Margin="259,42,0,0" VerticalAlignment="Top" Width="77" FontWeight="Bold" FontSize="14">
+        <Label Content="database" HorizontalAlignment="Left" Margin="259,42,0,0" VerticalAlignment="Top" Width="77" FontWeight="Bold" FontSize="14" HorizontalContentAlignment="Right">
             <Label.Resources>
                 <Style TargetType="Label">
                     <Style.Triggers>
@@ -41,7 +41,41 @@
             </Label.Resources>
         </Label>
         <ComboBox x:Name="OutputProvidersComboBox" HorizontalAlignment="Left" Margin="134,46,0,0" VerticalAlignment="Top" Width="120" FontWeight="Bold" FontSize="14" SelectionChanged="OutputProvidersComboBox_SelectionChanged"/>
-        <ComboBox x:Name="OutputDatabasesComboBox" HorizontalAlignment="Left" Margin="341,44,0,0" VerticalAlignment="Top" Width="141" FontWeight="Bold" FontSize="14" Visibility="Hidden" SelectionChanged="OutputDatabasesComboBox_SelectionChanged"/>
+        <ComboBox x:Name="OutputDatabasesComboBox" HorizontalAlignment="Left" Margin="341,44,0,0" VerticalAlignment="Top" Width="141" FontWeight="Bold" FontSize="14" Visibility="Visible" SelectionChanged="OutputDatabasesComboBox_SelectionChanged"/>
+        <TextBox x:Name="OutputTextBox" HorizontalAlignment="Left" TextWrapping="Wrap" VerticalAlignment="Top" Width="203" Height="23" FontWeight="Bold" FontSize="14">
+            <TextBox.Resources>
+                <Style TargetType="TextBox">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding ElementName=OutputDatabasesComboBox, Path=Visibility}" Value="Hidden">
+                            <Setter Property="Margin" Value="354,46,0,0" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding ElementName=OutputDatabasesComboBox, Path=Visibility}" Value="Visible">
+                            <Setter Property="Margin" Value="570,46,0,0" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBox.Resources>
+        </TextBox>
+        <Label x:Name="outputLabel" Content="file path" HorizontalAlignment="Left" VerticalAlignment="Top" Width="77" FontWeight="Bold" FontSize="14" HorizontalContentAlignment="Right">
+            <Label.Resources>
+                <Style TargetType="Label">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding ElementName=OutputTextBox, Path=Visibility}" Value="Hidden">
+                            <Setter Property="Visibility" Value="Hidden" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding ElementName=OutputTextBox, Path=Visibility}" Value="Visible">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding ElementName=OutputDatabasesComboBox, Path=Visibility}" Value="Hidden">
+                            <Setter Property="Margin" Value="259,42,0,0"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding ElementName=OutputDatabasesComboBox, Path=Visibility}" Value="Visible">
+                            <Setter Property="Margin" Value="480,42,0,0"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Label.Resources>
+        </Label>
 
     </Grid>
 </Window>

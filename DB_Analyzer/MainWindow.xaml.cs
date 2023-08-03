@@ -35,6 +35,7 @@ namespace DB_Analyzer
         readonly string mysqlserver_name = "mysql";
         readonly string none_name = "none";
         readonly string textfile_name = "text file";
+        readonly string new_database_name = "new database";
         private void registerProviders()
         {
             var connstr = ConfigurationManager.ConnectionStrings[sqlserver_name];
@@ -105,6 +106,8 @@ namespace DB_Analyzer
             }
             catch (Exception ex)
             {
+                InputDatabasesComboBox.Items.Clear();
+                InputDatabasesComboBox.Items.Add(new ComboBoxItem() { Content = none_name, IsSelected = true });
                 MessageBox.Show($"Error: {ex.Message}");
             }
         }
@@ -120,19 +123,24 @@ namespace DB_Analyzer
         private async void OutputProvidersComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             string selectedProvider = (OutputProvidersComboBox.SelectedItem as ComboBoxItem).Content as string;
-            OutputDatabasesComboBox.Visibility = Visibility.Visible;
+            OutputDatabasesComboBox.Visibility = Visibility.Hidden;
+            OutputTextBox.Visibility = Visibility.Hidden;
             if(selectedProvider == none_name)
             {
                 OutputDatabasesComboBox.Visibility = Visibility.Hidden;
+                OutputTextBox.Visibility = Visibility.Hidden;
                 return;
             }
             else if(selectedProvider == textfile_name)
             {
                 OutputDatabasesComboBox.Visibility = Visibility.Hidden;
+                OutputTextBox.Visibility = Visibility.Visible;
+                outputLabel.Content = "file path";
                 return;
             }
             else
             {
+                OutputDatabasesComboBox.Visibility = Visibility.Visible;
                 try
                 {
                     if (selectedProvider == sqlserver_name)
@@ -142,9 +150,12 @@ namespace DB_Analyzer
 
                     List<string>? dbs = await outputDBTool.GetDatabasesAsync();
                     await FillDbComboBox(dbs, OutputDatabasesComboBox, outputDBTool);
+                    OutputDatabasesComboBox.Items.Add(new ComboBoxItem() {Content=new_database_name });
                 }
                 catch (Exception ex)
                 {
+                    OutputDatabasesComboBox.Items.Clear();
+                    OutputDatabasesComboBox.Items.Add(new ComboBoxItem() { Content = none_name, IsSelected = true });
                     MessageBox.Show($"Error: {ex.Message}");
                 }
             }

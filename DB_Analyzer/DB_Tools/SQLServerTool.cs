@@ -9,6 +9,10 @@ namespace DB_Analyzer.DB_Tools
 {
     class SQLServerTool : DBTool
     {
+        private readonly string getDatabasesQuery = @$"SELECT name " +
+                                                    @$"FROM sys.databases " +
+                                                    @$"WHERE name NOT IN ('master', 'tempdb', 'model', 'msdb') " +
+                                                    @$"AND name NOT LIKE 'resource%';";
         public SQLServerTool(string? connectionString) : base(connectionString)
         {
         }
@@ -35,8 +39,29 @@ namespace DB_Analyzer.DB_Tools
         }
         public override List<string> GetDatabases()
         {
-            if (ConnectionString == null)
-                throw new Exception("connection string is null");
+            try {
+                return GetFromServer(getDatabasesQuery);
+            }catch(Exception ex)
+            {
+                throw;
+            }
+            
+        }
+        public override async Task<List<string>> GetDatabasesAsync()
+        {
+            try
+            {
+                return await GetFromServerAsync(getDatabasesQuery);
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+            
+        }
+
+        private List<string> GetFromServer(string query)
+        {
             List<string> databases = new List<string>();
             using (var conn = new SqlConnection(ConnectionString))
             {
@@ -44,10 +69,6 @@ namespace DB_Analyzer.DB_Tools
                 {
                     conn.Open();
                     databases = new List<string>();
-                    string query = @$"SELECT name " +
-                                    @$"FROM sys.databases " +
-                                    @$"WHERE name NOT IN ('master', 'tempdb', 'model', 'msdb') " +
-                                    @$"AND name NOT LIKE 'resource%';";
                     using (var cmd = new SqlCommand(query, conn))
                     using (var reader = cmd.ExecuteReader())
                     {
@@ -64,25 +85,15 @@ namespace DB_Analyzer.DB_Tools
             }
             return databases;
         }
-        public override async Task<List<string>> GetDatabasesAsync()
+        private async Task<List<string>> GetFromServerAsync(string querry)
         {
-            if (ConnectionString == null)
-                throw new Exception("Connection string is null");
-
             List<string> databases = new List<string>();
-
             using (var conn = new SqlConnection(ConnectionString))
             {
                 try
                 {
                     await conn.OpenAsync();
-
-                    string query = @"SELECT name " +
-                                   @"FROM sys.databases " +
-                                   @"WHERE name NOT IN ('master', 'tempdb', 'model', 'msdb') " +
-                                   @"AND name NOT LIKE 'resource%';";
-
-                    using (var cmd = new SqlCommand(query, conn))
+                    using (var cmd = new SqlCommand(querry, conn))
                     using (var reader = await cmd.ExecuteReaderAsync())
                     {
                         while (await reader.ReadAsync())
@@ -96,8 +107,16 @@ namespace DB_Analyzer.DB_Tools
                     throw;
                 }
             }
-
             return databases;
+        }
+
+        public override List<string> GetTables()
+        {
+            return null;
+        }
+        public override Task<List<string>> GetTablesAsync()
+        {
+            return null;
         }
     }
 }

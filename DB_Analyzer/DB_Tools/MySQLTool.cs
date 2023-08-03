@@ -9,6 +9,9 @@ namespace DB_Analyzer.DB_Tools
 {
     class MySQLTool : DBTool
     {
+        private readonly string getDatabasesQuery = @$"SHOW DATABASES " +
+                                                     @$"WHERE `Database` NOT IN ('information_schema', 'mysql', 'performance_schema', 'sys');";
+        private readonly string getTablesQuery = "SHOW TABLES;";
         public MySQLTool(string? connectionString) : base(connectionString)
         { }
         public override string SelectedDatabase
@@ -34,7 +37,31 @@ namespace DB_Analyzer.DB_Tools
         }
         public override List<string> GetDatabases()
         {
-            if (ConnectionString == null) throw new Exception("connection string is null");
+            try
+            {
+                return GetFromServer(getDatabasesQuery);
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+
+        }
+        public override async Task<List<string>> GetDatabasesAsync()
+        {
+            try
+            {
+                return await GetFromServerAsync(getDatabasesQuery);
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+
+        }
+
+        private List<string> GetFromServer(string query)
+        {
             List<string> databases = new List<string>();
             using (var conn = new MySqlConnection(ConnectionString))
             {
@@ -42,8 +69,6 @@ namespace DB_Analyzer.DB_Tools
                 {
                     conn.Open();
                     databases = new List<string>();
-                    string query = @$"SHOW DATABASES " +
-                                    @$"WHERE `Database` NOT IN ('information_schema', 'mysql', 'performance_schema', 'sys');";
                     using (var cmd = new MySqlCommand(query, conn))
                     using (var reader = cmd.ExecuteReader())
                     {
@@ -60,22 +85,14 @@ namespace DB_Analyzer.DB_Tools
             }
             return databases;
         }
-        public override async Task<List<string>> GetDatabasesAsync()
+        private async Task<List<string>> GetFromServerAsync(string querry)
         {
-            if (ConnectionString == null)
-                throw new Exception("Connection string is null");
-
             List<string> databases = new List<string>();
-
             using (var conn = new MySqlConnection(ConnectionString))
             {
                 try
                 {
                     await conn.OpenAsync();
-
-                    string querry = @$"SHOW DATABASES " +
-                                    @$"WHERE `Database` NOT IN ('information_schema', 'mysql', 'performance_schema', 'sys');";
-
                     using (var cmd = new MySqlCommand(querry, conn))
                     using (var reader = await cmd.ExecuteReaderAsync())
                     {
@@ -90,8 +107,16 @@ namespace DB_Analyzer.DB_Tools
                     throw;
                 }
             }
-
             return databases;
+        }
+
+        public override List<string> GetTables()
+        {
+            return null;
+        }
+        public override Task<List<string>> GetTablesAsync()
+        {
+            return null;
         }
     }
 }
