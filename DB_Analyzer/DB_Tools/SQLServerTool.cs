@@ -13,6 +13,9 @@ namespace DB_Analyzer.DB_Tools
                                                     @$"FROM sys.databases " +
                                                     @$"WHERE name NOT IN ('master', 'tempdb', 'model', 'msdb') " +
                                                     @$"AND name NOT LIKE 'resource%';";
+        private readonly string getTablesQuery = "SELECT TABLE_NAME " +
+                                                 "FROM INFORMATION_SCHEMA.TABLES " +
+                                                 "WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_NAME NOT LIKE 'sysdiagrams';";
         public SQLServerTool(string? connectionString) : base(connectionString)
         {
         }
@@ -39,7 +42,8 @@ namespace DB_Analyzer.DB_Tools
         }
         public override List<string> GetDatabases()
         {
-            try {
+            try
+            {
                 return GetFromServer(getDatabasesQuery);
             }catch(Exception ex)
             {
@@ -112,11 +116,25 @@ namespace DB_Analyzer.DB_Tools
 
         public override List<string> GetTables()
         {
-            return null;
+            try
+            {
+                return GetFromServer(getTablesQuery);
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
         }
         public override Task<List<string>> GetTablesAsync()
         {
-            return null;
+            try
+            {
+                return GetFromServerAsync(getTablesQuery);
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
         }
     }
 }

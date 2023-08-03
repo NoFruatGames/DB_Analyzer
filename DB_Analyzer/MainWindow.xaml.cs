@@ -149,8 +149,29 @@ namespace DB_Analyzer
                         outputDBTool = new MySQLTool(ConfigurationManager.ConnectionStrings[mysqlserver_name].ConnectionString);
 
                     List<string>? dbs = await outputDBTool.GetDatabasesAsync();
-                    await FillDbComboBox(dbs, OutputDatabasesComboBox, outputDBTool);
-                    OutputDatabasesComboBox.Items.Add(new ComboBoxItem() {Content=new_database_name });
+                    //await FillDbComboBox(dbs, OutputDatabasesComboBox, outputDBTool);
+                    //
+                    OutputDatabasesComboBox.Items.Clear();
+                    OutputDatabasesComboBox.Items.Add(new ComboBoxItem() { Content = none_name});
+                    OutputDatabasesComboBox.SelectedItem = OutputDatabasesComboBox.Items[0];
+                    string initselectedDB = outputDBTool.SelectedDatabase;
+                    foreach (var el in dbs)
+                    {
+                        outputDBTool.SelectedDatabase = el;
+                        List<string> tables = await outputDBTool.GetTablesAsync();
+                        
+                        if (tables.Count == 0 || (tables.Count == 3 
+                            && tables[0] == "dbs" && tables[1] == "common_info" && tables[2] == "tables_info"))
+                        {
+                            ComboBoxItem item = new ComboBoxItem() { Content = el };
+                            if (el == initselectedDB)
+                                item.IsSelected = true;
+                            else
+                                item.IsSelected = false;
+                            OutputDatabasesComboBox.Items.Add(item);
+                        }
+                    }
+                    OutputDatabasesComboBox.Items.Add(new ComboBoxItem() { Content = new_database_name });
                 }
                 catch (Exception ex)
                 {
@@ -163,10 +184,17 @@ namespace DB_Analyzer
 
         private void OutputDatabasesComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            OutputTextBox.Visibility = Visibility.Hidden;
+            OutputTextBox.Text = "";
             if (OutputDatabasesComboBox == null || OutputDatabasesComboBox.SelectedItem == null) return;
             string selectedDB = (OutputDatabasesComboBox.SelectedItem as ComboBoxItem).Content as string;
             if (selectedDB == none_name) return;
             outputDBTool.SelectedDatabase = selectedDB;
+            if(selectedDB == new_database_name)
+            {
+                outputLabel.Content = "db name";
+                OutputTextBox.Visibility = Visibility.Visible;
+            }    
         }
     }
 }

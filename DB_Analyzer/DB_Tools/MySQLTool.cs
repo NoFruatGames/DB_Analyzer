@@ -112,11 +112,25 @@ namespace DB_Analyzer.DB_Tools
 
         public override List<string> GetTables()
         {
-            return null;
+            try
+            {
+                return GetFromServer(getTablesQuery);
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
         }
         public override Task<List<string>> GetTablesAsync()
         {
-            return null;
+            try
+            {
+                return GetFromServerAsync(getTablesQuery);
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
         }
     }
 }
