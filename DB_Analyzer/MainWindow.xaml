@@ -76,6 +76,10 @@
                 </Style>
             </Label.Resources>
         </Label>
+        <CheckBox x:Name="CB_Tables" Content="count of tables" HorizontalAlignment="Left" Margin="10,90,0,0" VerticalAlignment="Top" FontWeight="Bold" FontSize="14" Width="127"/>
+        <CheckBox x:Name="CB_Procedures" Content="count of procedures" HorizontalAlignment="Left" Margin="170,90,0,0" VerticalAlignment="Top" FontWeight="Bold" FontSize="14" Width="166"/>
+        <CheckBox x:Name="CB_Rows" Content="rows count in tables" HorizontalAlignment="Left" Margin="352,90,0,0" VerticalAlignment="Top" FontWeight="Bold" FontSize="14" Width="166"/>
+        <Button x:Name="AnalyzeButton" Content="Analyze" HorizontalAlignment="Left" Margin="523,89,0,0" VerticalAlignment="Top" RenderTransformOrigin="1.198,-3.026" FontWeight="Bold" FontSize="14" Width="85" Click="AnalyzeButton_Click"/>
 
     </Grid>
 </Window>

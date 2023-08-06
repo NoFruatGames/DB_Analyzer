@@ -15,10 +15,11 @@ namespace DB_Analyzer.DB_Tools
             if (connectionString == null) throw new Exception("connection string is null");
             ConnectionString = connectionString;
         }
-        public abstract List<string> GetDatabases();
         public abstract Task<List<string>> GetDatabasesAsync();
-        public abstract List<string> GetTables();
         public abstract Task<List<string>> GetTablesAsync();
-
+        public abstract void CreateDBSTableAsync();
+        public abstract void CreateCommonInfoTableAsync();
+        public abstract void CreateTablesInfoTableAsync();
+        public abstract Task<bool> CheckTableExistAsync(string tableName);
     }
 }

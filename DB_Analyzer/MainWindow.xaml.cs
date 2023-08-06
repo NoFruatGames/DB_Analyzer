@@ -85,6 +85,8 @@ namespace DB_Analyzer
         }
         DBTool inputDBTool;
         DBTool outputDBTool;
+        Analyzer analyzer = new Analyzer();
+        List<string> outputDbs;
         private async void InputProvidersComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             string selectedProvider = (InputProvidersComboBox.SelectedItem as ComboBoxItem).Content as string;
@@ -148,20 +150,17 @@ namespace DB_Analyzer
                     else if (selectedProvider == mysqlserver_name)
                         outputDBTool = new MySQLTool(ConfigurationManager.ConnectionStrings[mysqlserver_name].ConnectionString);
 
-                    List<string>? dbs = await outputDBTool.GetDatabasesAsync();
-                    //await FillDbComboBox(dbs, OutputDatabasesComboBox, outputDBTool);
-                    //
+                    outputDbs = await outputDBTool.GetDatabasesAsync();
                     OutputDatabasesComboBox.Items.Clear();
                     OutputDatabasesComboBox.Items.Add(new ComboBoxItem() { Content = none_name});
                     OutputDatabasesComboBox.SelectedItem = OutputDatabasesComboBox.Items[0];
                     string initselectedDB = outputDBTool.SelectedDatabase;
-                    foreach (var el in dbs)
+                    foreach (var el in outputDbs)
                     {
                         outputDBTool.SelectedDatabase = el;
                         List<string> tables = await outputDBTool.GetTablesAsync();
                         
-                        if (tables.Count == 0 || (tables.Count == 3 
-                            && tables[0] == "dbs" && tables[1] == "common_info" && tables[2] == "tables_info"))
+                        if (tables.Count == 0 || (tables.Count == 3 && tables.All(table => new[] { "dbs", "common_info", "tables_info" }.Contains(table))))
                         {
                             ComboBoxItem item = new ComboBoxItem() { Content = el };
                             if (el == initselectedDB)
@@ -195,6 +194,32 @@ namespace DB_Analyzer
                 outputLabel.Content = "db name";
                 OutputTextBox.Visibility = Visibility.Visible;
             }    
+        }
+
+        private async void AnalyzeButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (InputDatabasesComboBox.SelectedItem == null || OutputDatabasesComboBox.SelectedItem == null)
+                return;
+            string inpCBText = (InputDatabasesComboBox.SelectedItem as ComboBoxItem).Content.ToString();
+            string outCBText = (OutputDatabasesComboBox.SelectedItem as ComboBoxItem).Content.ToString();
+            if (inpCBText == none_name || outCBText == none_name || (outCBText == new_database_name && string.IsNullOrEmpty(OutputTextBox.Text)))
+                return;
+            foreach(var db in outputDbs)
+            {
+                if (db == OutputTextBox.Text)
+                    return;
+            }
+            analyzer.InputTool = inputDBTool;
+            analyzer.OutputTool = outputDBTool;
+            try
+            {
+                analyzer.Analyze();
+
+            }catch(Exception ex)
+            {
+                MessageBox.Show($"Error: {ex.Message}");
+            }
+            MessageBox.Show("sucess");
         }
     }
 }
