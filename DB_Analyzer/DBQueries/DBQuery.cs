@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace DB_Analyzer.DBQueries
 {
-    interface DBQueries
+    interface IDBQueries
     {
         string GetDatabasesQuery();
         string GetTablesQuery();

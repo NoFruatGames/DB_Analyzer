@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace DB_Analyzer.DBQueries
 {
-    class MySqlQueries : DBQueries
+    class MySqlQueries : IDBQueries
     {
         public MySqlQueries() { }
         public string GetDatabasesQuery()
