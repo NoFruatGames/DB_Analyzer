@@ -11,21 +11,43 @@ namespace DB_Analyzer_dll
 {
     public class DBAnalyzer
     {
-        private DBTools inputDBTool;
-        private DBTools outputDBTool;
+        private DBToolsProxy inputDBTool;
+        private DBToolsProxy outputDBTool;
         public void SetInputDatabase(InputType type, string connectionString)
         {
             if(type == InputType.sql_server)
-                inputDBTool = new DBTools(DbProviderFactories.GetFactory(Providers.SqlServerName), new SqlQueries(), connectionString);
+            {
+                if (inputDBTool == null || inputDBTool.providerType != InputType.sql_server)
+                    inputDBTool = new DBToolsProxy(DbProviderFactories.GetFactory(Providers.SqlServerName), new SqlQueries(), connectionString, InputType.sql_server);
+                else
+                    inputDBTool.ChangeConnectionString(connectionString);
+            }
+                
             else if(type == InputType.mysql)
-                inputDBTool = new DBTools(DbProviderFactories.GetFactory(Providers.MySqlName), new MySqlQueries(), connectionString);
+            {
+                if (inputDBTool == null || inputDBTool.providerType != InputType.mysql)
+                    inputDBTool = new DBToolsProxy(DbProviderFactories.GetFactory(Providers.MySqlName), new MySqlQueries(), connectionString, InputType.mysql);
+                else
+                    inputDBTool.ChangeConnectionString(connectionString);
+            }
+                
         }
         public void SetOutputType(OutputType type, string outputString)
         {
             if (type == OutputType.sql_server)
-                inputDBTool = new DBTools(DbProviderFactories.GetFactory(Providers.SqlServerName), new SqlQueries(), outputString);
+            {
+                if (outputDBTool == null || outputDBTool.providerType != InputType.sql_server)
+                    outputDBTool = new DBToolsProxy(DbProviderFactories.GetFactory(Providers.SqlServerName), new SqlQueries(), outputString, InputType.sql_server);
+                else
+                    outputDBTool.ChangeConnectionString(outputString);
+            }
             else if (type == OutputType.mysql)
-                inputDBTool = new DBTools(DbProviderFactories.GetFactory(Providers.MySqlName), new MySqlQueries(), outputString);
+            {
+                if (outputDBTool == null || outputDBTool.providerType != InputType.mysql)
+                    outputDBTool = new DBToolsProxy(DbProviderFactories.GetFactory(Providers.MySqlName), new MySqlQueries(), outputString, InputType.mysql);
+                else
+                    outputDBTool.ChangeConnectionString(outputString);
+            }
         }
         public DBAnalyzer()
         {
@@ -50,7 +72,14 @@ namespace DB_Analyzer_dll
             }
         }
 
-
+        public async Task<List<string>> GetInputDatabasesAsync()
+        {
+            return await inputDBTool.GetDatabasesAsync();
+        }
+        public async Task<List<string>> GetOutputDatabasesAsync()
+        {
+            return await outputDBTool.GetDatabasesAsync();
+        }
     }
     public enum InputType
     {
