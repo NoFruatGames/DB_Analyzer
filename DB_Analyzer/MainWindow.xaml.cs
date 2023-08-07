@@ -16,6 +16,7 @@ using Microsoft.Data.SqlClient;
 using System.Data.Common;
 using MySql.Data.MySqlClient;
 using System.Configuration;
+using DB_Analyzer_dll;
 namespace DB_Analyzer
 {
     /// <summary>
@@ -26,27 +27,15 @@ namespace DB_Analyzer
         public MainWindow()
         {
             InitializeComponent();
-            registerProviders();
             fillInputProvidersComboBox();
             fillOutputProvidersComboBox();
         }
-        readonly string sqlserver_name = "sql server";
-        readonly string mysqlserver_name = "mysql";
         readonly string none_name = "none";
         readonly string textfile_name = "text file";
         readonly string new_database_name = "new database";
-        private void registerProviders()
-        {
-            var connstr = ConfigurationManager.ConnectionStrings[sqlserver_name];
-            if (connstr != null && !string.IsNullOrEmpty(connstr.ConnectionString))
-                DbProviderFactories.RegisterFactory(sqlserver_name, SqlClientFactory.Instance);
-            connstr = ConfigurationManager.ConnectionStrings[mysqlserver_name];
-            if (connstr != null && !string.IsNullOrEmpty(connstr.ConnectionString))
-                DbProviderFactories.RegisterFactory(mysqlserver_name, MySqlClientFactory.Instance);
-        }
         private void fillInputProvidersComboBox()
         {
-            var providersNames = DbProviderFactories.GetProviderInvariantNames();
+            var providersNames = DBAnalyzer.Providers.GetProvidersList();
             InputProvidersComboBox.Items.Add(new ComboBoxItem() { Content = none_name, IsSelected=true });
             foreach (var pn in providersNames)
             {
@@ -55,7 +44,7 @@ namespace DB_Analyzer
         }
         private void fillOutputProvidersComboBox()
         {
-            var providersNames = DbProviderFactories.GetProviderInvariantNames();
+            var providersNames = DBAnalyzer.Providers.GetProvidersList();
             OutputProvidersComboBox.Items.Add(new ComboBoxItem() { Content = none_name, IsSelected = true });
             foreach (var pn in providersNames)
             {
@@ -63,9 +52,10 @@ namespace DB_Analyzer
             }
             OutputProvidersComboBox.Items.Add(new ComboBoxItem() { Content = textfile_name});
         }
-
+        DBAnalyzer analyzer = new DBAnalyzer();
         private async void InputProvidersComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            
         }
 
         private void inputDatabasesComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)

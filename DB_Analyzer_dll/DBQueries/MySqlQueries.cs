@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DB_Analyzer.DBQueries
+namespace DB_Analyzer_dll.DBQueries
 {
-    class MySqlQueries : IDBQueries
+    internal class MySqlQueries : IDBQueries
     {
         public MySqlQueries() { }
         public string GetDatabasesQuery()
