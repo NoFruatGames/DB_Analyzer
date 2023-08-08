@@ -78,7 +78,26 @@ namespace DB_Analyzer_dll
         }
         public async Task<List<string>> GetOutputDatabasesAsync()
         {
-            return await outputDBTool.GetDatabasesAsync();
+            var dbsWithoutCheck = await outputDBTool.GetDatabasesAsync();
+            var dbsWithCheck = new List<string>();
+            foreach (var db in dbsWithoutCheck)
+            {
+                var tables = await outputDBTool.GetTablesFromDatabaseAsync(db);
+                if(tables.Count == 0 || (tables.Count == 3 && tables.All(table => new[] { "dbs", "common_info", "tables_info" }.Contains(table))))
+                {
+                    dbsWithCheck.Add(db);
+                }
+            }
+            return dbsWithCheck;
+        }
+
+        public async Task ChangeInputDatabase(string database)
+        {
+            await inputDBTool.ChangeDatabaseAsync(database);
+        }
+        public async Task ChangeOutputDatabase(string database)
+        {
+            await outputDBTool.ChangeDatabaseAsync(database);
         }
     }
     public enum InputType

@@ -66,6 +66,8 @@ namespace DB_Analyzer
                 return;
             InputDatabasesComboBox.Visibility = Visibility.Visible;
             List<string> dbs = null;
+            InputDatabasesComboBox.Items.Clear();
+            InputDatabasesComboBox.Items.Add(new ComboBoxItem() { Content = none_name, IsSelected = true });
             try
             {
                 dbs = await analyzer.GetInputDatabasesAsync();
@@ -73,17 +75,19 @@ namespace DB_Analyzer
             {
                 MessageBox.Show($"Error: {ex.Message}");
             }
-            InputDatabasesComboBox.Items.Clear();
-            InputDatabasesComboBox.Items.Add(new ComboBoxItem() { Content = none_name, IsSelected = true });
+            if (dbs == null) return;
             foreach(var db in dbs)
             {
                 InputDatabasesComboBox.Items.Add(new ComboBoxItem() { Content = db });
             }
         }
 
-        private void inputDatabasesComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private async void inputDatabasesComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-
+            if (InputDatabasesComboBox == null || InputDatabasesComboBox.SelectedItem == null) return;
+            string selected = (InputDatabasesComboBox.SelectedItem as ComboBoxItem).Content.ToString();
+            if (selected == none_name) return;
+            await analyzer.ChangeInputDatabase(selected);
         }
 
         private async void OutputProvidersComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -91,16 +95,23 @@ namespace DB_Analyzer
             if (OutputProvidersComboBox == null) return;
             string provider = (OutputProvidersComboBox.SelectedItem as ComboBoxItem).Content.ToString();
             OutputDatabasesComboBox.Visibility = Visibility.Hidden;
+            OutputTextBox.Visibility = Visibility.Hidden;
             if (provider == DBAnalyzer.Providers.SqlServerName)
                 analyzer.SetOutputType(DB_Analyzer_dll.OutputType.sql_server, ConfigurationManager.ConnectionStrings["sql server"].ConnectionString);
             else if (provider == DBAnalyzer.Providers.MySqlName)
                 analyzer.SetOutputType(DB_Analyzer_dll.OutputType.mysql, ConfigurationManager.ConnectionStrings["mysql"].ConnectionString);
             else if (provider == textfile_name)
+            {
                 analyzer.SetOutputType(DB_Analyzer_dll.OutputType.text_file, string.Empty);
+                OutputTextBox.Visibility = Visibility.Visible;
+                return;
+            }
             else
                 return;
             OutputDatabasesComboBox.Visibility = Visibility.Visible;
             List<string> dbs = null;
+            OutputDatabasesComboBox.Items.Clear();
+            OutputDatabasesComboBox.Items.Add(new ComboBoxItem() { Content = none_name, IsSelected = true });
             try
             {
                 dbs = await analyzer.GetOutputDatabasesAsync();
@@ -109,18 +120,21 @@ namespace DB_Analyzer
             {
                 MessageBox.Show($"Error: {ex.Message}");
             }
-            OutputDatabasesComboBox.Items.Clear();
-            OutputDatabasesComboBox.Items.Add(new ComboBoxItem() { Content = none_name, IsSelected = true });
+            if (dbs == null) return;
             foreach (var db in dbs)
             {
                 OutputDatabasesComboBox.Items.Add(new ComboBoxItem() { Content = db });
             }
+            OutputDatabasesComboBox.Items.Add(new ComboBoxItem() { Content = new_database_name });
 
         }
 
-        private void OutputDatabasesComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private async void OutputDatabasesComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-
+            if (OutputDatabasesComboBox == null || OutputDatabasesComboBox.SelectedItem == null) return;
+            string selected = (OutputDatabasesComboBox.SelectedItem as ComboBoxItem).Content.ToString();
+            if (selected == none_name) return;
+            await analyzer.ChangeOutputDatabase(selected);
         }
 
         private async void AnalyzeButton_Click(object sender, RoutedEventArgs e)
