@@ -3,3 +3,4 @@ DB_Analyzer/bin
 DB_Analyzer/obj
 DB_Analyzer_dll/bin
 DB_Analyzer_dll/obj
+*.txt

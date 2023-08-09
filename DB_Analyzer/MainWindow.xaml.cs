@@ -12,11 +12,9 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using Microsoft.Data.SqlClient;
-using System.Data.Common;
-using MySql.Data.MySqlClient;
 using System.Configuration;
 using DB_Analyzer_dll;
+using System.Windows.Forms;
 namespace DB_Analyzer
 {
     /// <summary>
@@ -73,7 +71,7 @@ namespace DB_Analyzer
                 dbs = await analyzer.GetInputDatabasesAsync();
             }catch(Exception ex)
             {
-                MessageBox.Show($"Error: {ex.Message}");
+                System.Windows.MessageBox.Show($"Error: {ex.Message}");
             }
             if (dbs == null) return;
             foreach(var db in dbs)
@@ -93,14 +91,15 @@ namespace DB_Analyzer
             string provider = (OutputProvidersComboBox.SelectedItem as ComboBoxItem).Content.ToString();
             OutputDatabasesComboBox.Visibility = Visibility.Hidden;
             OutputTextBox.Visibility = Visibility.Hidden;
+            SaveFileButton.Visibility = Visibility.Hidden;
             if (provider == DBAnalyzer.Providers.SqlServerName)
                 analyzer.SetOutputType(DB_Analyzer_dll.OutputType.sql_server, ConfigurationManager.ConnectionStrings["sql server"].ConnectionString);
             else if (provider == DBAnalyzer.Providers.MySqlName)
                 analyzer.SetOutputType(DB_Analyzer_dll.OutputType.mysql, ConfigurationManager.ConnectionStrings["mysql"].ConnectionString);
             else if (provider == textfile_name)
             {
+                SaveFileButton.Visibility = Visibility.Visible;
                 analyzer.SetOutputType(DB_Analyzer_dll.OutputType.text_file, string.Empty);
-                OutputTextBox.Visibility = Visibility.Visible;
                 return;
             }
             else
@@ -115,7 +114,7 @@ namespace DB_Analyzer
             }
             catch(Exception ex)
             {
-                MessageBox.Show($"Error: {ex.Message}");
+                System.Windows.MessageBox.Show($"Error: {ex.Message}");
             }
             if (dbs == null) return;
             foreach (var db in dbs)
@@ -136,38 +135,63 @@ namespace DB_Analyzer
 
         private async void AnalyzeButton_Click(object sender, RoutedEventArgs e)
         {
-            string outProv = (OutputProvidersComboBox.SelectedItem as ComboBoxItem).Content.ToString();
-            if ((InputProvidersComboBox.SelectedItem as ComboBoxItem).Content.ToString() == none_name ||
-                 outProv == none_name)
-                return;
-            string inpDB = (InputDatabasesComboBox.SelectedItem as ComboBoxItem).Content.ToString();
-            if (outProv == textfile_name && !string.IsNullOrEmpty(OutputTextBox.Text))
+            try
             {
-                await analyzer.Analyze(inpDB, OutputTextBox.Text);
-            }
-            else
-            {
-                
-                string outDB = (OutputDatabasesComboBox.SelectedItem as ComboBoxItem).Content.ToString();
-                if (inpDB == none_name || outDB == none_name) return;
-                if (outDB == new_database_name)
+                string outProv = (OutputProvidersComboBox.SelectedItem as ComboBoxItem).Content.ToString();
+                if ((InputProvidersComboBox.SelectedItem as ComboBoxItem).Content.ToString() == none_name ||
+                     outProv == none_name)
+                    return;
+                string inpDB = (InputDatabasesComboBox.SelectedItem as ComboBoxItem).Content.ToString();
+                if (outProv == textfile_name && !string.IsNullOrEmpty(OutputTextBox.Text))
                 {
-                    if (string.IsNullOrEmpty(OutputTextBox.Text)) return;
-                    await analyzer.Analyze(inpDB, OutputTextBox.Text, true);
+                    await analyzer.Analyze(inpDB, OutputTextBox.Text);
                 }
                 else
                 {
-                    await analyzer.Analyze(inpDB, outDB);
+
+                    string outDB = (OutputDatabasesComboBox.SelectedItem as ComboBoxItem).Content.ToString();
+                    if (inpDB == none_name || outDB == none_name) return;
+                    if (outDB == new_database_name)
+                    {
+                        if (string.IsNullOrEmpty(OutputTextBox.Text)) return;
+                        await analyzer.Analyze(inpDB, OutputTextBox.Text, true);
+                    }
+                    else
+                    {
+                        await analyzer.Analyze(inpDB, outDB);
+                    }
                 }
+                System.Windows.MessageBox.Show("Sucess");
+            }catch(Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Error: {ex.Message}");
             }
+        }
 
-            //
+        private void CB_Tables_Click(object sender, RoutedEventArgs e)
+        {
+            analyzer.TablesCountCheck = (bool)CB_Tables.IsChecked;
+        }
 
-            //if (inpDB == none_name || outDB == none_name) return;
-            //string outTextBoxVal = OutputTextBox.Text;
-            //if (outDB == new_database_name && string.IsNullOrEmpty(outTextBoxVal)) return;
-            //if (outProv == textfile_name && string.IsNullOrEmpty(outTextBoxVal)) return;
-            //MessageBox.Show("Sucess");
+        private void CB_Procedures_Click(object sender, RoutedEventArgs e)
+        {
+            analyzer.ProceduresCountCheck = (bool)CB_Procedures.IsChecked;
+        }
+
+        private void CB_Rows_Click(object sender, RoutedEventArgs e)
+        {
+            analyzer.TablesRowsCheck = (bool)CB_Rows.IsChecked;
+        }
+
+
+        private void SaveFileButton_Click(object sender, RoutedEventArgs e)
+        {
+            var saveFile = new SaveFileDialog();
+            saveFile.Filter = "Text Files | *.*";
+            if (saveFile.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                OutputTextBox.Text = saveFile.FileName;
+            }
         }
     }
 }

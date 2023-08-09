@@ -14,5 +14,11 @@ namespace DB_Analyzer_dll.DBQueries
         string CreateDBSTableQuery();
         string CreateCommonInfoTableQuery();
         string CreateTablesInfoTableQuery();
+        string CreateDatabaseQuery(string databaseName);
+        string InsertIntoDbsTableQuery();
+        string InsertIntoCommonInfoTableQuery();
+        string InsertIntoTablesInfoTableQuery();
+        string GetTablesRowsQuery();
+        string GetProceduresCountQuery();
     }
 }
