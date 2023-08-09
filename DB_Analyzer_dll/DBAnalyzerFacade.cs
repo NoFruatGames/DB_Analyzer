@@ -19,10 +19,12 @@ namespace DB_Analyzer_dll
         public InputType IType { get; private set; }
         public void SetInputServer(InputType type, string connectionString)
         {
+            if(inputDBTool != null)
+                inputDBTool.CloseConnection();
             if(type == InputType.sql_server)
             {
                 IType = InputType.sql_server;
-                if (inputDBTool == null || inputDBTool.providerType != InputType.sql_server)
+                if (inputDBTool == null || inputDBTool.Type != InputType.sql_server)
                     inputDBTool = new DBToolsProxy(DbProviderFactories.GetFactory(Providers.SqlServerName), new SqlQueries(), connectionString, InputType.sql_server);
                 else
                     inputDBTool.ChangeConnectionString(connectionString);
@@ -31,7 +33,7 @@ namespace DB_Analyzer_dll
             else if(type == InputType.mysql)
             {
                 IType = InputType.mysql;
-                if (inputDBTool == null || inputDBTool.providerType != InputType.mysql)
+                if (inputDBTool == null || inputDBTool.Type != InputType.mysql)
                     inputDBTool = new DBToolsProxy(DbProviderFactories.GetFactory(Providers.MySqlName), new MySqlQueries(), connectionString, InputType.mysql);
                 else
                     inputDBTool.ChangeConnectionString(connectionString);
@@ -40,10 +42,12 @@ namespace DB_Analyzer_dll
         }
         public void SetOutputType(OutputType type, string outputString)
         {
+            if(outputDBTool != null)
+                outputDBTool.CloseConnection();
             if (type == OutputType.sql_server)
             {
                 OType = OutputType.sql_server;
-                if (outputDBTool == null || outputDBTool.providerType != InputType.sql_server)
+                if (outputDBTool == null || outputDBTool.Type != InputType.sql_server)
                     outputDBTool = new DBToolsProxy(DbProviderFactories.GetFactory(Providers.SqlServerName), new SqlQueries(), outputString, InputType.sql_server);
                 else
                     outputDBTool.ChangeConnectionString(outputString);
@@ -51,7 +55,7 @@ namespace DB_Analyzer_dll
             else if (type == OutputType.mysql)
             {
                 OType = OutputType.mysql;
-                if (outputDBTool == null || outputDBTool.providerType != InputType.mysql)
+                if (outputDBTool == null || outputDBTool.Type != InputType.mysql)
                     outputDBTool = new DBToolsProxy(DbProviderFactories.GetFactory(Providers.MySqlName), new MySqlQueries(), outputString, InputType.mysql);
                 else
                     outputDBTool.ChangeConnectionString(outputString);
@@ -64,13 +68,11 @@ namespace DB_Analyzer_dll
         public async Task Analyze(string inputDatabaseName, string outputDatabaseName, bool createDatabase=false)
         {
             if (string.IsNullOrEmpty(inputDatabaseName) || string.IsNullOrEmpty(outputDatabaseName)) throw new Exception("database name cannot be empty");
-            DbConnection inputConnection = inputDBTool.Connection;
-            DbConnection outputConnection = outputDBTool.Connection;
             try
             {
 
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 throw;
             }
@@ -96,16 +98,17 @@ namespace DB_Analyzer_dll
         }
         public async Task<List<string>> GetOutputDatabasesAsync()
         {
-            var dbsWithoutCheck = await outputDBTool.GetDatabasesAsync();
+            var dbsWithoutCheck = await outputDBTool.GetDatabasesAsync(false);
             var dbsWithCheck = new List<string>();
             foreach (var db in dbsWithoutCheck)
             {
-                var tables = await outputDBTool.GetTablesFromDatabaseAsync(db);
+                var tables = await outputDBTool.GetTablesFromDatabaseAsync(db, false);
                 if(tables.Count == 0 || (tables.Count == 3 && tables.All(table => new[] { "dbs", "common_info", "tables_info" }.Contains(table))))
                 {
                     dbsWithCheck.Add(db);
                 }
             }
+            outputDBTool.CloseConnection();
             return dbsWithCheck;
         }
 
@@ -117,7 +120,11 @@ namespace DB_Analyzer_dll
         {
             await outputDBTool.ChangeDatabaseAsync(database);
         }
-
+        ~DBAnalyzer()
+        {
+            inputDBTool.CloseConnection();
+            outputDBTool.CloseConnection();
+        }
 
     }
     public enum InputType

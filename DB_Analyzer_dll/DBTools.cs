@@ -13,7 +13,7 @@ namespace DB_Analyzer_dll
         private int getDatabasesCount;
         private List<string> databases;
         private List<DBInfo> dBInfos;
-        public readonly InputType providerType;
+        public InputType Type { get; private set; }
         public DbProviderFactory Factory { get { return original.Factory; } }
         public IDBQueries Queries { get { return original.Queries; } }
         public DbConnection Connection { get { return original.Connection; } }
@@ -22,8 +22,8 @@ namespace DB_Analyzer_dll
             original = new DBTools(factory, queries, connectionString);
             getDatabasesCount = 5;
             databases = new List<string>();
-            providerType = type;
             dBInfos = new List<DBInfo>();
+            Type = type;
         }
         public async Task ChangeDatabaseAsync(string databaseName)
         {
@@ -37,13 +37,13 @@ namespace DB_Analyzer_dll
         {
             return original.GetCurnetDatabase();
         }
-        public async Task<List<string>> GetDatabasesAsync()
+        public async Task<List<string>> GetDatabasesAsync(bool closeConnection=true)
         {
             getDatabasesCount += 1;
             if(getDatabasesCount >= 5)
             {
                 getDatabasesCount = 0;
-                databases = await original.GetDatabasesAsync();
+                databases = await original.GetDatabasesAsync(closeConnection);
                 bool flag = true;
                 foreach(var db in databases)
                 {
@@ -57,16 +57,20 @@ namespace DB_Analyzer_dll
                     }
                     if (flag)
                     {
-                        DBInfo bInfo = new DBInfo() { database = db, updateCount = 0 };
-                        bInfo.Tables = await original.GetTablesFromDatabaseAsync(db);
+                        DBInfo bInfo = new DBInfo() { database = db, updateCount = 5 };
                         dBInfos.Add(bInfo);
                     }
                 }
             }
             return databases;
         }
+        public async Task CloseConnection()
+        {
+            if (Connection.State == System.Data.ConnectionState.Open)
+                await Connection.CloseAsync();
+        }
 
-        public async Task<List<string>> GetTablesFromDatabaseAsync(string dbName)
+        public async Task<List<string>> GetTablesFromDatabaseAsync(string dbName, bool closeConnection=true)
         {
             try
             {
@@ -79,7 +83,7 @@ namespace DB_Analyzer_dll
                         dB.updateCount += 1;
                         if (dB.updateCount >= 5)
                         {
-                            dB.Tables = await original.GetTablesFromDatabaseAsync(dbName);
+                            dB.Tables = await original.GetTablesFromDatabaseAsync(dbName, closeConnection);
                         }
                         dBInfos[i] = dB;
                         return dB.Tables;
@@ -113,12 +117,13 @@ namespace DB_Analyzer_dll
                 Connection.ConnectionString = connectionString;
             }
 
-            public async Task<List<string>> GetDatabasesAsync()
+            public async Task<List<string>> GetDatabasesAsync(bool closeConnection=true)
             {
                 List<string> databases = new List<string>();
                 try
                 {
-                    await Connection.OpenAsync();
+                    if (Connection.State == System.Data.ConnectionState.Closed)
+                        await Connection.OpenAsync();
                     using var command = Factory.CreateCommand();
                     command.CommandText = Queries.GetDatabasesQuery();
                     command.Connection = Connection;
@@ -134,7 +139,8 @@ namespace DB_Analyzer_dll
                 }
                 finally
                 {
-                    await Connection.CloseAsync();
+                    if (Connection.State == System.Data.ConnectionState.Broken || (Connection.State == System.Data.ConnectionState.Open && closeConnection))
+                        await Connection.CloseAsync();
                 }
                 return databases;
             }
@@ -142,12 +148,13 @@ namespace DB_Analyzer_dll
             {
                 return Connection.Database;
             }
-            public async Task<List<string>> GetTablesFromDatabaseAsync(string dbName)
+            public async Task<List<string>> GetTablesFromDatabaseAsync(string dbName, bool closeConnection=true)
             {
                 List<string> tables = new List<string>();
                 try
                 {
-                    await Connection.OpenAsync();
+                    if(Connection.State == System.Data.ConnectionState.Closed)
+                        await Connection.OpenAsync();
                     await Connection.ChangeDatabaseAsync(dbName);
                     using var command = Factory.CreateCommand();
                     command.CommandText = Queries.GetTablesQuery();
@@ -164,7 +171,8 @@ namespace DB_Analyzer_dll
                 }
                 finally
                 {
-                    await Connection.CloseAsync();
+                    if(Connection.State == System.Data.ConnectionState.Broken || (Connection.State == System.Data.ConnectionState.Open && closeConnection))
+                        await Connection.CloseAsync();
                 }
                 return tables;
             }

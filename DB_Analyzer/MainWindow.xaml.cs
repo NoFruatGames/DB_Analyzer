@@ -140,23 +140,24 @@ namespace DB_Analyzer
             if ((InputProvidersComboBox.SelectedItem as ComboBoxItem).Content.ToString() == none_name ||
                  outProv == none_name)
                 return;
-            if(outProv == textfile_name && !string.IsNullOrEmpty(OutputTextBox.Text))
+            string inpDB = (InputDatabasesComboBox.SelectedItem as ComboBoxItem).Content.ToString();
+            if (outProv == textfile_name && !string.IsNullOrEmpty(OutputTextBox.Text))
             {
-                MessageBox.Show("Sucess");
+                await analyzer.Analyze(inpDB, OutputTextBox.Text);
             }
             else
             {
-                string inpDB = (InputDatabasesComboBox.SelectedItem as ComboBoxItem).Content.ToString();
+                
                 string outDB = (OutputDatabasesComboBox.SelectedItem as ComboBoxItem).Content.ToString();
                 if (inpDB == none_name || outDB == none_name) return;
                 if (outDB == new_database_name)
                 {
                     if (string.IsNullOrEmpty(OutputTextBox.Text)) return;
-                    MessageBox.Show("Sucess");
+                    await analyzer.Analyze(inpDB, OutputTextBox.Text, true);
                 }
                 else
                 {
-                    MessageBox.Show("Sucess");
+                    await analyzer.Analyze(inpDB, outDB);
                 }
             }
 
