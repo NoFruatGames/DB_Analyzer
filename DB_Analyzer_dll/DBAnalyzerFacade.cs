@@ -13,10 +13,15 @@ namespace DB_Analyzer_dll
     {
         private DBToolsProxy inputDBTool;
         private DBToolsProxy outputDBTool;
-        public void SetInputDatabase(InputType type, string connectionString)
+        public DbProviderFactory InputProviderFactory { get { return inputDBTool.Factory; } }
+        public DbProviderFactory OutputProviderFactory { get { return outputDBTool.Factory; } }
+        public OutputType OType { get; private set; }
+        public InputType IType { get; private set; }
+        public void SetInputServer(InputType type, string connectionString)
         {
             if(type == InputType.sql_server)
             {
+                IType = InputType.sql_server;
                 if (inputDBTool == null || inputDBTool.providerType != InputType.sql_server)
                     inputDBTool = new DBToolsProxy(DbProviderFactories.GetFactory(Providers.SqlServerName), new SqlQueries(), connectionString, InputType.sql_server);
                 else
@@ -25,6 +30,7 @@ namespace DB_Analyzer_dll
                 
             else if(type == InputType.mysql)
             {
+                IType = InputType.mysql;
                 if (inputDBTool == null || inputDBTool.providerType != InputType.mysql)
                     inputDBTool = new DBToolsProxy(DbProviderFactories.GetFactory(Providers.MySqlName), new MySqlQueries(), connectionString, InputType.mysql);
                 else
@@ -36,6 +42,7 @@ namespace DB_Analyzer_dll
         {
             if (type == OutputType.sql_server)
             {
+                OType = OutputType.sql_server;
                 if (outputDBTool == null || outputDBTool.providerType != InputType.sql_server)
                     outputDBTool = new DBToolsProxy(DbProviderFactories.GetFactory(Providers.SqlServerName), new SqlQueries(), outputString, InputType.sql_server);
                 else
@@ -43,6 +50,7 @@ namespace DB_Analyzer_dll
             }
             else if (type == OutputType.mysql)
             {
+                OType = OutputType.mysql;
                 if (outputDBTool == null || outputDBTool.providerType != InputType.mysql)
                     outputDBTool = new DBToolsProxy(DbProviderFactories.GetFactory(Providers.MySqlName), new MySqlQueries(), outputString, InputType.mysql);
                 else
@@ -53,9 +61,19 @@ namespace DB_Analyzer_dll
         {
             Providers.RegisterProviders();
         }
-        public async void Analyze()
+        public async Task Analyze(string inputDatabaseName, string outputDatabaseName, bool createDatabase=false)
         {
+            if (string.IsNullOrEmpty(inputDatabaseName) || string.IsNullOrEmpty(outputDatabaseName)) throw new Exception("database name cannot be empty");
+            DbConnection inputConnection = inputDBTool.Connection;
+            DbConnection outputConnection = outputDBTool.Connection;
+            try
+            {
 
+            }
+            catch(Exception ex)
+            {
+                throw;
+            }
         }
         public static class Providers
         {
@@ -99,6 +117,8 @@ namespace DB_Analyzer_dll
         {
             await outputDBTool.ChangeDatabaseAsync(database);
         }
+
+
     }
     public enum InputType
     {

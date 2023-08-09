@@ -59,9 +59,9 @@ namespace DB_Analyzer
             if (InputProvidersComboBox == null) return;
             string provider = (InputProvidersComboBox.SelectedItem as ComboBoxItem).Content.ToString();
             if (provider == DBAnalyzer.Providers.SqlServerName)
-                analyzer.SetInputDatabase(DB_Analyzer_dll.InputType.sql_server, ConfigurationManager.ConnectionStrings["sql server"].ConnectionString);
+                analyzer.SetInputServer(DB_Analyzer_dll.InputType.sql_server, ConfigurationManager.ConnectionStrings["sql server"].ConnectionString);
             else if (provider == DBAnalyzer.Providers.MySqlName)
-                analyzer.SetInputDatabase(DB_Analyzer_dll.InputType.mysql, ConfigurationManager.ConnectionStrings["mysql"].ConnectionString);
+                analyzer.SetInputServer(DB_Analyzer_dll.InputType.mysql, ConfigurationManager.ConnectionStrings["mysql"].ConnectionString);
             else
                 return;
             InputDatabasesComboBox.Visibility = Visibility.Visible;
@@ -84,10 +84,7 @@ namespace DB_Analyzer
 
         private async void inputDatabasesComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (InputDatabasesComboBox == null || InputDatabasesComboBox.SelectedItem == null) return;
-            string selected = (InputDatabasesComboBox.SelectedItem as ComboBoxItem).Content.ToString();
-            if (selected == none_name) return;
-            await analyzer.ChangeInputDatabase(selected);
+
         }
 
         private async void OutputProvidersComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -131,15 +128,45 @@ namespace DB_Analyzer
 
         private async void OutputDatabasesComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (OutputDatabasesComboBox == null || OutputDatabasesComboBox.SelectedItem == null) return;
-            string selected = (OutputDatabasesComboBox.SelectedItem as ComboBoxItem).Content.ToString();
-            if (selected == none_name) return;
-            await analyzer.ChangeOutputDatabase(selected);
+            OutputTextBox.Visibility = Visibility.Hidden;
+            if (OutputDatabasesComboBox.SelectedItem == null || 
+                (OutputDatabasesComboBox.SelectedItem as ComboBoxItem).Content.ToString() != new_database_name) return;
+            OutputTextBox.Visibility = Visibility.Visible;
         }
 
         private async void AnalyzeButton_Click(object sender, RoutedEventArgs e)
         {
-            
+            string outProv = (OutputProvidersComboBox.SelectedItem as ComboBoxItem).Content.ToString();
+            if ((InputProvidersComboBox.SelectedItem as ComboBoxItem).Content.ToString() == none_name ||
+                 outProv == none_name)
+                return;
+            if(outProv == textfile_name && !string.IsNullOrEmpty(OutputTextBox.Text))
+            {
+                MessageBox.Show("Sucess");
+            }
+            else
+            {
+                string inpDB = (InputDatabasesComboBox.SelectedItem as ComboBoxItem).Content.ToString();
+                string outDB = (OutputDatabasesComboBox.SelectedItem as ComboBoxItem).Content.ToString();
+                if (inpDB == none_name || outDB == none_name) return;
+                if (outDB == new_database_name)
+                {
+                    if (string.IsNullOrEmpty(OutputTextBox.Text)) return;
+                    MessageBox.Show("Sucess");
+                }
+                else
+                {
+                    MessageBox.Show("Sucess");
+                }
+            }
+
+            //
+
+            //if (inpDB == none_name || outDB == none_name) return;
+            //string outTextBoxVal = OutputTextBox.Text;
+            //if (outDB == new_database_name && string.IsNullOrEmpty(outTextBoxVal)) return;
+            //if (outProv == textfile_name && string.IsNullOrEmpty(outTextBoxVal)) return;
+            //MessageBox.Show("Sucess");
         }
     }
 }

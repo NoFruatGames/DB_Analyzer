@@ -14,6 +14,9 @@ namespace DB_Analyzer_dll
         private List<string> databases;
         private List<DBInfo> dBInfos;
         public readonly InputType providerType;
+        public DbProviderFactory Factory { get { return original.Factory; } }
+        public IDBQueries Queries { get { return original.Queries; } }
+        public DbConnection Connection { get { return original.Connection; } }
         public DBToolsProxy(DbProviderFactory factory, IDBQueries queries, string connectionString, InputType type)
         {
             original = new DBTools(factory, queries, connectionString);
@@ -88,7 +91,7 @@ namespace DB_Analyzer_dll
             }
             return new List<string>();
         }
-
+        
         private class DBTools
         {
             public IDBQueries Queries { get; private set; }

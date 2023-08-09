@@ -56,7 +56,7 @@
                 </Style>
             </TextBox.Resources>
         </TextBox>
-        <Label x:Name="outputLabel" Content="file path" HorizontalAlignment="Left" VerticalAlignment="Top" Width="77" FontWeight="Bold" FontSize="14" HorizontalContentAlignment="Right">
+        <Label x:Name="outputLabel" HorizontalAlignment="Left" VerticalAlignment="Top" Width="77" FontWeight="Bold" FontSize="14" HorizontalContentAlignment="Right">
             <Label.Resources>
                 <Style TargetType="Label">
                     <Style.Triggers>
@@ -67,10 +67,12 @@
                             <Setter Property="Visibility" Value="Visible" />
                         </DataTrigger>
                         <DataTrigger Binding="{Binding ElementName=OutputDatabasesComboBox, Path=Visibility}" Value="Hidden">
+                            <Setter Property="Content" Value="file path"/>
                             <Setter Property="Margin" Value="259,42,0,0"/>
                         </DataTrigger>
                         <DataTrigger Binding="{Binding ElementName=OutputDatabasesComboBox, Path=Visibility}" Value="Visible">
                             <Setter Property="Margin" Value="480,42,0,0"/>
+                            <Setter Property="Content" Value="db name"/>
                         </DataTrigger>
                     </Style.Triggers>
                 </Style>
