@@ -13,14 +13,14 @@ namespace DB_Analyzer_dll
     {
         private DBToolsProxy inputDBTool;
         private DBToolsProxy outputDBTool;
-        public DbProviderFactory InputProviderFactory { get { return inputDBTool.Factory; } }
-        public DbProviderFactory OutputProviderFactory { get { return outputDBTool.Factory; } }
+        //public DbProviderFactory InputProviderFactory { get { return inputDBTool.Factory; } }
+        //public DbProviderFactory OutputProviderFactory { get { return outputDBTool.Factory; } }
         public OutputType OType { get; private set; }
         public InputType IType { get; private set; }
         public void SetInputServer(InputType type, string connectionString)
         {
             if(inputDBTool != null)
-                inputDBTool.CloseConnection();
+                inputDBTool.CloseConnectionAsync();
             if(type == InputType.sql_server)
             {
                 IType = InputType.sql_server;
@@ -43,7 +43,7 @@ namespace DB_Analyzer_dll
         public void SetOutputType(OutputType type, string outputString)
         {
             if(outputDBTool != null)
-                outputDBTool.CloseConnection();
+                outputDBTool.CloseConnectionAsync();
             if (type == OutputType.sql_server)
             {
                 OType = OutputType.sql_server;
@@ -70,6 +70,23 @@ namespace DB_Analyzer_dll
             if (string.IsNullOrEmpty(inputDatabaseName) || string.IsNullOrEmpty(outputDatabaseName)) throw new Exception("database name cannot be empty");
             try
             {
+                if(OType != OutputType.text_file)
+                {
+                    if (!createDatabase)
+                    {
+                        if (await outputDBTool.OpenConnection())
+                        {
+                            await outputDBTool.ChangeDatabaseAsync(outputDatabaseName);
+                            if (!await outputDBTool.CheckTableExistAsync(TableType.dbs, false))
+                                await outputDBTool.CreateTableAsync(TableType.dbs, false);
+                            if (!await outputDBTool.CheckTableExistAsync(TableType.common_info, false))
+                                await outputDBTool.CreateTableAsync(TableType.common_info, false);
+                            if (!await outputDBTool.CheckTableExistAsync(TableType.tables_info, false))
+                                await outputDBTool.CreateTableAsync(TableType.tables_info, true);
+                        }
+                        await outputDBTool.CloseConnectionAsync();
+                    }
+                }
 
             }
             catch (Exception ex)
@@ -108,7 +125,7 @@ namespace DB_Analyzer_dll
                     dbsWithCheck.Add(db);
                 }
             }
-            outputDBTool.CloseConnection();
+            await outputDBTool.CloseConnectionAsync();
             return dbsWithCheck;
         }
 
@@ -122,8 +139,8 @@ namespace DB_Analyzer_dll
         }
         ~DBAnalyzer()
         {
-            inputDBTool.CloseConnection();
-            outputDBTool.CloseConnection();
+            inputDBTool.CloseConnectionAsync();
+            outputDBTool.CloseConnectionAsync();
         }
 
     }
