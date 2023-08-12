@@ -12,11 +12,9 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using Microsoft.Data.SqlClient;
-using System.Data.Common;
-using MySql.Data.MySqlClient;
 using System.Configuration;
-using DB_Analyzer.DB_Tools;
+using DB_Analyzer_dll;
+using System.Windows.Forms;
 namespace DB_Analyzer
 {
     /// <summary>
@@ -27,27 +25,15 @@ namespace DB_Analyzer
         public MainWindow()
         {
             InitializeComponent();
-            registerProviders();
             fillInputProvidersComboBox();
             fillOutputProvidersComboBox();
         }
-        readonly string sqlserver_name = "sql server";
-        readonly string mysqlserver_name = "mysql";
         readonly string none_name = "none";
         readonly string textfile_name = "text file";
         readonly string new_database_name = "new database";
-        private void registerProviders()
-        {
-            var connstr = ConfigurationManager.ConnectionStrings[sqlserver_name];
-            if (connstr != null && !string.IsNullOrEmpty(connstr.ConnectionString))
-                DbProviderFactories.RegisterFactory(sqlserver_name, SqlClientFactory.Instance);
-            connstr = ConfigurationManager.ConnectionStrings[mysqlserver_name];
-            if (connstr != null && !string.IsNullOrEmpty(connstr.ConnectionString))
-                DbProviderFactories.RegisterFactory(mysqlserver_name, MySqlClientFactory.Instance);
-        }
         private void fillInputProvidersComboBox()
         {
-            var providersNames = DbProviderFactories.GetProviderInvariantNames();
+            var providersNames = DBAnalyzer.Providers.GetProvidersList();
             InputProvidersComboBox.Items.Add(new ComboBoxItem() { Content = none_name, IsSelected=true });
             foreach (var pn in providersNames)
             {
@@ -56,7 +42,7 @@ namespace DB_Analyzer
         }
         private void fillOutputProvidersComboBox()
         {
-            var providersNames = DbProviderFactories.GetProviderInvariantNames();
+            var providersNames = DBAnalyzer.Providers.GetProvidersList();
             OutputProvidersComboBox.Items.Add(new ComboBoxItem() { Content = none_name, IsSelected = true });
             foreach (var pn in providersNames)
             {
@@ -64,162 +50,148 @@ namespace DB_Analyzer
             }
             OutputProvidersComboBox.Items.Add(new ComboBoxItem() { Content = textfile_name});
         }
-        private async Task FillDbComboBox(List<string>? databases, ComboBox comboBox, DBTool tool)
-        {
-            if (OutputDatabasesComboBox == null) return;
-            comboBox.Items.Clear();
-            comboBox.Items.Add(new ComboBoxItem() { Content = none_name });
-            comboBox.SelectedItem = comboBox.Items[0];
-            if (databases == null) return;
-            string selectedDB = tool.SelectedDatabase;
-            foreach (var dbName in databases)
-            {
-                ComboBoxItem item = new ComboBoxItem() { Content = dbName };
-
-                if (!string.IsNullOrEmpty(selectedDB) && (item.Content as string) == selectedDB)
-                    item.IsSelected = true;
-                else
-                    item.IsSelected = false;
-                comboBox.Items.Add(item);
-            }
-        }
-        DBTool inputDBTool;
-        DBTool outputDBTool;
-        Analyzer analyzer = new Analyzer();
-        List<string> outputDbs;
+        DBAnalyzer analyzer = new DBAnalyzer();
         private async void InputProvidersComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            string selectedProvider = (InputProvidersComboBox.SelectedItem as ComboBoxItem).Content as string;
-            InputDatabasesComboBox.Visibility = Visibility.Visible;
-            if (selectedProvider == none_name)
-            {
-                InputDatabasesComboBox.Visibility = Visibility.Hidden;
+            InputDatabasesComboBox.Visibility = Visibility.Hidden;
+            if (InputProvidersComboBox == null) return;
+            string provider = (InputProvidersComboBox.SelectedItem as ComboBoxItem).Content.ToString();
+            if (provider == DBAnalyzer.Providers.SqlServerName)
+                analyzer.SetInputServer(DB_Analyzer_dll.InputType.sql_server, ConfigurationManager.ConnectionStrings["sql server"].ConnectionString);
+            else if (provider == DBAnalyzer.Providers.MySqlName)
+                analyzer.SetInputServer(DB_Analyzer_dll.InputType.mysql, ConfigurationManager.ConnectionStrings["mysql"].ConnectionString);
+            else
                 return;
-            }
+            InputDatabasesComboBox.Visibility = Visibility.Visible;
+            List<string> dbs = null;
+            InputDatabasesComboBox.Items.Clear();
+            InputDatabasesComboBox.Items.Add(new ComboBoxItem() { Content = none_name, IsSelected = true });
             try
             {
-                if (selectedProvider == sqlserver_name)
-                    inputDBTool = new SQLServerTool(ConfigurationManager.ConnectionStrings[sqlserver_name].ConnectionString);
-                else if (selectedProvider == mysqlserver_name)
-                    inputDBTool = new MySQLTool(ConfigurationManager.ConnectionStrings[mysqlserver_name].ConnectionString);
-
-                List<string>? dbs = await inputDBTool.GetDatabasesAsync();
-                await FillDbComboBox(dbs, InputDatabasesComboBox, inputDBTool);
-            }
-            catch (Exception ex)
+                dbs = await analyzer.GetInputDatabasesAsync();
+            }catch(Exception ex)
             {
-                InputDatabasesComboBox.Items.Clear();
-                InputDatabasesComboBox.Items.Add(new ComboBoxItem() { Content = none_name, IsSelected = true });
-                MessageBox.Show($"Error: {ex.Message}");
+                System.Windows.MessageBox.Show($"Error: {ex.Message}");
+            }
+            if (dbs == null) return;
+            foreach(var db in dbs)
+            {
+                InputDatabasesComboBox.Items.Add(new ComboBoxItem() { Content = db });
             }
         }
 
-        private void inputDatabasesComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private async void inputDatabasesComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (InputDatabasesComboBox == null || InputDatabasesComboBox.SelectedItem == null) return;
-            string selectedDB = (InputDatabasesComboBox.SelectedItem as ComboBoxItem).Content as string;
-            if (selectedDB == none_name) return;
-            inputDBTool.SelectedDatabase = selectedDB;
+
         }
 
         private async void OutputProvidersComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            string selectedProvider = (OutputProvidersComboBox.SelectedItem as ComboBoxItem).Content as string;
+            if (OutputProvidersComboBox == null) return;
+            string provider = (OutputProvidersComboBox.SelectedItem as ComboBoxItem).Content.ToString();
             OutputDatabasesComboBox.Visibility = Visibility.Hidden;
             OutputTextBox.Visibility = Visibility.Hidden;
-            if(selectedProvider == none_name)
+            SaveFileButton.Visibility = Visibility.Hidden;
+            if (provider == DBAnalyzer.Providers.SqlServerName)
+                analyzer.SetOutputType(DB_Analyzer_dll.OutputType.sql_server, ConfigurationManager.ConnectionStrings["sql server"].ConnectionString);
+            else if (provider == DBAnalyzer.Providers.MySqlName)
+                analyzer.SetOutputType(DB_Analyzer_dll.OutputType.mysql, ConfigurationManager.ConnectionStrings["mysql"].ConnectionString);
+            else if (provider == textfile_name)
             {
-                OutputDatabasesComboBox.Visibility = Visibility.Hidden;
-                OutputTextBox.Visibility = Visibility.Hidden;
-                return;
-            }
-            else if(selectedProvider == textfile_name)
-            {
-                OutputDatabasesComboBox.Visibility = Visibility.Hidden;
-                OutputTextBox.Visibility = Visibility.Visible;
-                outputLabel.Content = "file path";
+                SaveFileButton.Visibility = Visibility.Visible;
+                analyzer.SetOutputType(DB_Analyzer_dll.OutputType.text_file, string.Empty);
                 return;
             }
             else
+                return;
+            OutputDatabasesComboBox.Visibility = Visibility.Visible;
+            List<string> dbs = null;
+            OutputDatabasesComboBox.Items.Clear();
+            OutputDatabasesComboBox.Items.Add(new ComboBoxItem() { Content = none_name, IsSelected = true });
+            try
             {
-                OutputDatabasesComboBox.Visibility = Visibility.Visible;
-                try
-                {
-                    if (selectedProvider == sqlserver_name)
-                        outputDBTool = new SQLServerTool(ConfigurationManager.ConnectionStrings[sqlserver_name].ConnectionString);
-                    else if (selectedProvider == mysqlserver_name)
-                        outputDBTool = new MySQLTool(ConfigurationManager.ConnectionStrings[mysqlserver_name].ConnectionString);
-
-                    outputDbs = await outputDBTool.GetDatabasesAsync();
-                    OutputDatabasesComboBox.Items.Clear();
-                    OutputDatabasesComboBox.Items.Add(new ComboBoxItem() { Content = none_name});
-                    OutputDatabasesComboBox.SelectedItem = OutputDatabasesComboBox.Items[0];
-                    string initselectedDB = outputDBTool.SelectedDatabase;
-                    foreach (var el in outputDbs)
-                    {
-                        outputDBTool.SelectedDatabase = el;
-                        List<string> tables = await outputDBTool.GetTablesAsync();
-                        
-                        if (tables.Count == 0 || (tables.Count == 3 && tables.All(table => new[] { "dbs", "common_info", "tables_info" }.Contains(table))))
-                        {
-                            ComboBoxItem item = new ComboBoxItem() { Content = el };
-                            if (el == initselectedDB)
-                                item.IsSelected = true;
-                            else
-                                item.IsSelected = false;
-                            OutputDatabasesComboBox.Items.Add(item);
-                        }
-                    }
-                    OutputDatabasesComboBox.Items.Add(new ComboBoxItem() { Content = new_database_name });
-                }
-                catch (Exception ex)
-                {
-                    OutputDatabasesComboBox.Items.Clear();
-                    OutputDatabasesComboBox.Items.Add(new ComboBoxItem() { Content = none_name, IsSelected = true });
-                    MessageBox.Show($"Error: {ex.Message}");
-                }
+                dbs = await analyzer.GetOutputDatabasesAsync();
             }
+            catch(Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Error: {ex.Message}");
+            }
+            if (dbs == null) return;
+            foreach (var db in dbs)
+            {
+                OutputDatabasesComboBox.Items.Add(new ComboBoxItem() { Content = db });
+            }
+            OutputDatabasesComboBox.Items.Add(new ComboBoxItem() { Content = new_database_name });
+
         }
 
-        private void OutputDatabasesComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private async void OutputDatabasesComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             OutputTextBox.Visibility = Visibility.Hidden;
-            OutputTextBox.Text = "";
-            if (OutputDatabasesComboBox == null || OutputDatabasesComboBox.SelectedItem == null) return;
-            string selectedDB = (OutputDatabasesComboBox.SelectedItem as ComboBoxItem).Content as string;
-            if (selectedDB == none_name) return;
-            outputDBTool.SelectedDatabase = selectedDB;
-            if(selectedDB == new_database_name)
-            {
-                outputLabel.Content = "db name";
-                OutputTextBox.Visibility = Visibility.Visible;
-            }    
+            if (OutputDatabasesComboBox.SelectedItem == null || 
+                (OutputDatabasesComboBox.SelectedItem as ComboBoxItem).Content.ToString() != new_database_name) return;
+            OutputTextBox.Visibility = Visibility.Visible;
         }
 
         private async void AnalyzeButton_Click(object sender, RoutedEventArgs e)
         {
-            if (InputDatabasesComboBox.SelectedItem == null || OutputDatabasesComboBox.SelectedItem == null)
-                return;
-            string inpCBText = (InputDatabasesComboBox.SelectedItem as ComboBoxItem).Content.ToString();
-            string outCBText = (OutputDatabasesComboBox.SelectedItem as ComboBoxItem).Content.ToString();
-            if (inpCBText == none_name || outCBText == none_name || (outCBText == new_database_name && string.IsNullOrEmpty(OutputTextBox.Text)))
-                return;
-            foreach(var db in outputDbs)
-            {
-                if (db == OutputTextBox.Text)
-                    return;
-            }
-            analyzer.InputTool = inputDBTool;
-            analyzer.OutputTool = outputDBTool;
             try
             {
-                analyzer.Analyze();
+                string outProv = (OutputProvidersComboBox.SelectedItem as ComboBoxItem).Content.ToString();
+                if ((InputProvidersComboBox.SelectedItem as ComboBoxItem).Content.ToString() == none_name ||
+                     outProv == none_name)
+                    return;
+                string inpDB = (InputDatabasesComboBox.SelectedItem as ComboBoxItem).Content.ToString();
+                if (outProv == textfile_name && !string.IsNullOrEmpty(OutputTextBox.Text))
+                {
+                    await analyzer.Analyze(inpDB, OutputTextBox.Text);
+                }
+                else
+                {
 
+                    string outDB = (OutputDatabasesComboBox.SelectedItem as ComboBoxItem).Content.ToString();
+                    if (inpDB == none_name || outDB == none_name) return;
+                    if (outDB == new_database_name)
+                    {
+                        if (string.IsNullOrEmpty(OutputTextBox.Text)) return;
+                        await analyzer.Analyze(inpDB, OutputTextBox.Text, true);
+                    }
+                    else
+                    {
+                        await analyzer.Analyze(inpDB, outDB);
+                    }
+                }
+                System.Windows.MessageBox.Show("Sucess");
             }catch(Exception ex)
             {
-                MessageBox.Show($"Error: {ex.Message}");
+                System.Windows.MessageBox.Show($"Error: {ex.Message}");
             }
-            MessageBox.Show("sucess");
+        }
+
+        private void CB_Tables_Click(object sender, RoutedEventArgs e)
+        {
+            analyzer.TablesCountCheck = (bool)CB_Tables.IsChecked;
+        }
+
+        private void CB_Procedures_Click(object sender, RoutedEventArgs e)
+        {
+            analyzer.ProceduresCountCheck = (bool)CB_Procedures.IsChecked;
+        }
+
+        private void CB_Rows_Click(object sender, RoutedEventArgs e)
+        {
+            analyzer.TablesRowsCheck = (bool)CB_Rows.IsChecked;
+        }
+
+
+        private void SaveFileButton_Click(object sender, RoutedEventArgs e)
+        {
+            var saveFile = new SaveFileDialog();
+            saveFile.Filter = "Text Files | *.*";
+            if (saveFile.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                OutputTextBox.Text = saveFile.FileName;
+            }
         }
     }
 }
