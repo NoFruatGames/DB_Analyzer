@@ -640,7 +640,7 @@ namespace DB_Analyzer_dll
     {
         dbs, common_info, tables_info
     };
-    internal struct TableRowsInfo
+    public struct TableRowsInfo
     {
         public string tableName;
         public int rowsCount;

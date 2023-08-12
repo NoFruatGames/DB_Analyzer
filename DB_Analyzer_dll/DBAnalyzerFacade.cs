@@ -71,24 +71,38 @@ namespace DB_Analyzer_dll
         {
             Providers.RegisterProviders();
         }
-        public async Task Analyze(string inputDatabaseName, string outputDatabaseName, bool createDatabase=false)
+        public async Task<DBReport> GetReportFromDatabase(string databaseName)
         {
-            if (string.IsNullOrEmpty(inputDatabaseName) || string.IsNullOrEmpty(outputDatabaseName)) throw new Exception("database name cannot be empty");
+            if(string.IsNullOrEmpty(databaseName)) throw new Exception("database name cannot be empty");
             try
             {
                 int? tablesCount = null;
                 int? proceduresCount = null;
-                List<TableRowsInfo>? rowsInfos=null;
+                List<TableRowsInfo>? rowsInfos = null;
                 DateTime curnetDateTime = DateTime.Now;
                 await inputDBTool.OpenConnection();
-                await inputDBTool.ChangeDatabaseAsync(inputDatabaseName);
+                await inputDBTool.ChangeDatabaseAsync(databaseName);
                 if (TablesCountCheck)
-                    tablesCount = (await inputDBTool.GetTablesFromDatabaseAsync(inputDatabaseName, false)).Count;
+                    tablesCount = (await inputDBTool.GetTablesFromDatabaseAsync(databaseName, false)).Count;
                 if (ProceduresCountCheck)
                     proceduresCount = await inputDBTool.GetProceduresCountAsync(false);
                 if (TablesRowsCheck)
                     rowsInfos = await inputDBTool.GetTablesRowsAsync(true);
                 await inputDBTool.CloseConnectionAsync();
+                return new DBReport(databaseName,IType,tablesCount, proceduresCount, rowsInfos, curnetDateTime);
+            }catch(Exception ex)
+            {
+                if(inputDBTool != null)
+                    await inputDBTool.CloseConnectionAsync();
+                throw;
+            }
+
+        }
+        public async Task WriteReport(DBReport report, string databaseName, bool createDatabase = false)
+        {
+            if (string.IsNullOrEmpty(databaseName)) throw new Exception("database name cannot be empty");
+            try
+            {
                 if (OType != OutputType.text_file)
                 {
 
@@ -96,16 +110,16 @@ namespace DB_Analyzer_dll
                     {
                         if (createDatabase)
                         {
-                            if (!(await outputDBTool.GetDatabasesAsync(false)).Contains(outputDatabaseName))
+                            if (!(await outputDBTool.GetDatabasesAsync(false)).Contains(databaseName))
                             {
-                                await outputDBTool.CreateDatabaseAsync(outputDatabaseName, false);
+                                await outputDBTool.CreateDatabaseAsync(databaseName, false);
                             }
                             else
                             {
                                 throw new Exception("Invalid database name: database exist");
                             }
                         }
-                        await outputDBTool.ChangeDatabaseAsync(outputDatabaseName);
+                        await outputDBTool.ChangeDatabaseAsync(databaseName);
                         if (!await outputDBTool.CheckTableExistAsync(TableType.dbs, false))
                             await outputDBTool.CreateTableAsync(TableType.dbs, false);
                         if (!await outputDBTool.CheckTableExistAsync(TableType.common_info, false))
@@ -113,32 +127,32 @@ namespace DB_Analyzer_dll
                         if (!await outputDBTool.CheckTableExistAsync(TableType.tables_info, false))
                             await outputDBTool.CreateTableAsync(TableType.tables_info, true);
 
-                        int curnetDBCheck = await outputDBTool.InsertToDBSTableAsync(IType.ToString(), inputDatabaseName, curnetDateTime, false);
-                        if(rowsInfos != null)
+                        int curnetDBCheck = await outputDBTool.InsertToDBSTableAsync(report.DatabaseProvider.ToString(), report.DatabaseName, report.CheckDate, false);
+                        if (report.RowsInfos != null)
                         {
-                            foreach(var row in rowsInfos)
+                            foreach (var row in report.RowsInfos)
                             {
                                 await outputDBTool.InsertToTablesInfoTableAsync(row.tableName, row.rowsCount, curnetDBCheck, false);
                             }
                         }
-                        await outputDBTool.InsertToCommonInfoTableAsync(tablesCount, proceduresCount, curnetDBCheck, true);
+                        await outputDBTool.InsertToCommonInfoTableAsync(report.TablesCount, report.ProceduresCount, curnetDBCheck, true);
                     }
-                    
+
                 }
                 else
                 {
-                    var writer = new StreamWriter(outputDatabaseName, false);
-                    writer.WriteLine("Server: " + IType.ToString());
-                    writer.WriteLine("Database name: " + inputDatabaseName);
-                    writer.WriteLine("Check date: " + curnetDateTime.ToString());
-                    if (tablesCount != null)
-                        writer.WriteLine("Tables count: " + tablesCount.ToString());
-                    if (proceduresCount != null)
-                        writer.WriteLine("Procedures count: " + proceduresCount.ToString());
-                    if(rowsInfos != null)
+                    var writer = new StreamWriter(databaseName, false);
+                    writer.WriteLine("Server: " + report.DatabaseProvider.ToString());
+                    writer.WriteLine("Database name: " + report.DatabaseName);
+                    writer.WriteLine("Check date: " + report.CheckDate.ToString());
+                    if (report.TablesCount != null)
+                        writer.WriteLine("Tables count: " + report.TablesCount.ToString());
+                    if (report.ProceduresCount != null)
+                        writer.WriteLine("Procedures count: " + report.ProceduresCount.ToString());
+                    if (report.RowsInfos != null)
                     {
                         writer.WriteLine("Table name: rows count");
-                        foreach (var row in rowsInfos)
+                        foreach (var row in report.RowsInfos)
                         {
                             writer.WriteLine(row.tableName + ": " + row.rowsCount.ToString());
                         }
@@ -146,22 +160,25 @@ namespace DB_Analyzer_dll
                     await writer.FlushAsync();
                     writer.Close();
                 }
-
             }
-            catch (Exception ex)
+            catch(Exception ex)
             {
-                if(inputDBTool != null)
-                    await inputDBTool.CloseConnectionAsync();
                 if(outputDBTool != null)
                     await outputDBTool.CloseConnectionAsync();
                 throw;
             }
-            finally
+        }
+        public async Task Analyze(string inputDatabaseName, string outputDatabaseName, bool createDatabase=false)
+        {
+            if (string.IsNullOrEmpty(inputDatabaseName) || string.IsNullOrEmpty(outputDatabaseName)) throw new Exception("database name cannot be empty");
+            try
             {
-                if (inputDBTool != null)
-                    await inputDBTool.CloseConnectionAsync();
-                if (outputDBTool != null)
-                    await outputDBTool.CloseConnectionAsync();
+                DBReport report = await GetReportFromDatabase(inputDatabaseName);
+                await WriteReport(report, outputDatabaseName, createDatabase);
+            }
+            catch (Exception ex)
+            {
+                throw;
             }
         }
         public static class Providers
@@ -198,15 +215,6 @@ namespace DB_Analyzer_dll
             await outputDBTool.CloseConnectionAsync();
             return dbsWithCheck;
         }
-
-        public async Task ChangeInputDatabase(string database)
-        {
-            await inputDBTool.ChangeDatabaseAsync(database);
-        }
-        public async Task ChangeOutputDatabase(string database)
-        {
-            await outputDBTool.ChangeDatabaseAsync(database);
-        }
         ~DBAnalyzer()
         {
             inputDBTool.CloseConnectionAsync();
@@ -221,5 +229,23 @@ namespace DB_Analyzer_dll
     public enum OutputType
     {
         sql_server, mysql, text_file
+    };
+    public class DBReport
+    {
+        public string DatabaseName { get; private set; }
+        public InputType DatabaseProvider { get; set; }
+        public int? TablesCount { get; private set; }
+        public int? ProceduresCount { get; private set; }
+        public List<TableRowsInfo>? RowsInfos { get; private set; }
+        public DateTime CheckDate { get; private set; }
+        public DBReport(string databaseName, InputType databaseProvider, int? tablesCount, int? proceduresCount, List<TableRowsInfo>? rowsInfo, DateTime checkDate)
+        {
+            DatabaseName = databaseName;
+            DatabaseProvider = databaseProvider;
+            TablesCount = tablesCount;
+            ProceduresCount = proceduresCount;
+            RowsInfos = rowsInfo;
+            CheckDate = checkDate;
+        }
     };
 }
